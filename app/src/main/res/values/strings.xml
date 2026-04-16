@@ -27,4 +27,12 @@
     <string name="exit">Exit</string>
     <string name="play_again">Play Again</string>
     <string name="wrong_guess">Wrong Guess!</string>
+
+    <string name="add_word">Tambah Kata</string>
+    <string name="enter_new_word">Masukkan kata baru</string>
+    <string name="save_word">Simpan Kata</string>
+    <string name="saving">Menyimpan...</string>
+    <string name="word_added_success">Kata berhasil ditambahkan!</string>
+    <string name="word_already_exists">Kata sudah ada atau tidak valid!</string>
+    <string name="back">Kembali</string>
 </resources>

@@ -18,7 +18,9 @@ package com.example.unscramble.ui
 import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -28,10 +30,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
@@ -59,71 +65,89 @@ import com.example.unscramble.R
 import com.example.unscramble.ui.theme.UnscrambleTheme
 
 @Composable
-fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
+fun GameScreen(
+    gameViewModel: GameViewModel = viewModel(),
+    onNavigateToAddWord: () -> Unit = {}
+) {
     val gameUiState by gameViewModel.uiState.collectAsState()
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
-    Column(
-        modifier = Modifier
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .safeDrawingPadding()
-            .padding(mediumPadding),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            text = stringResource(R.string.app_name),
-            style = typography.titleLarge,
-        )
-        GameLayout(
-            onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
-            wordCount = gameUiState.currentWordCount,
-            userGuess = gameViewModel.userGuess,
-            onKeyboardDone = { gameViewModel.checkUserGuess() },
-            currentScrambledWord = gameUiState.currentScrambledWord,
-            isGuessWrong = gameUiState.isGuessedWordWrong,
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(mediumPadding)
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(mediumPadding),
-            verticalArrangement = Arrangement.spacedBy(mediumPadding),
+                .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .safeDrawingPadding()
+                .padding(mediumPadding)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { gameViewModel.checkUserGuess() }
+            Text(
+                text = stringResource(R.string.app_name),
+                style = typography.titleLarge,
+            )
+            GameLayout(
+                onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
+                wordCount = gameUiState.currentWordCount,
+                userGuess = gameViewModel.userGuess,
+                onKeyboardDone = { gameViewModel.checkUserGuess() },
+                currentScrambledWord = gameUiState.currentScrambledWord,
+                isGuessWrong = gameUiState.isGuessedWordWrong,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(mediumPadding)
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(mediumPadding),
+                verticalArrangement = Arrangement.spacedBy(mediumPadding),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = stringResource(R.string.submit),
-                    fontSize = 16.sp
-                )
+
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { gameViewModel.checkUserGuess() }
+                ) {
+                    Text(
+                        text = stringResource(R.string.submit),
+                        fontSize = 16.sp
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = { gameViewModel.skipWord() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.skip),
+                        fontSize = 16.sp
+                    )
+                }
             }
 
-            OutlinedButton(
-                onClick = { gameViewModel.skipWord() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.skip),
-                    fontSize = 16.sp
+            GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
+
+            if (gameUiState.isGameOver) {
+                FinalScoreDialog(
+                    score = gameUiState.score,
+                    onPlayAgain = { gameViewModel.resetGame() }
                 )
             }
         }
 
-        GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
-
-        if (gameUiState.isGameOver) {
-            FinalScoreDialog(
-                score = gameUiState.score,
-                onPlayAgain = { gameViewModel.resetGame() }
+        FloatingActionButton(
+            onClick = onNavigateToAddWord,
+            modifier = Modifier
+                .align(androidx.compose.ui.Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.add_word)
             )
         }
     }

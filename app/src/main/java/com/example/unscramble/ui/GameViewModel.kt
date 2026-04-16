@@ -20,18 +20,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.unscramble.data.MAX_NO_OF_WORDS
 import com.example.unscramble.data.SCORE_INCREASE
-import com.example.unscramble.data.allWords
+import com.example.unscramble.data.WordRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel containing the app data and methods to process the data
  */
-class GameViewModel : ViewModel() {
+class GameViewModel(
+    private val repository: WordRepository
+) : ViewModel() {
 
     // Game UI state
     private val _uiState = MutableStateFlow(GameUiState())
@@ -43,10 +47,23 @@ class GameViewModel : ViewModel() {
     // Set of words used in the game
     private var usedWords: MutableSet<String> = mutableSetOf()
     private lateinit var currentWord: String
+    private var allAvailableWords: Set<String> = emptySet()
 
     init {
-        resetGame()
+        loadAllWords()
     }
+
+    private fun loadAllWords() {
+        viewModelScope.launch {
+            repository.getAllWordsFlow().collect { words ->
+                allAvailableWords = words
+                if (allAvailableWords.isNotEmpty()) {
+                    resetGame()
+                }
+            }
+        }
+    }
+
 
     /*
      * Re-initializes the game data to restart the game.
@@ -83,6 +100,14 @@ class GameViewModel : ViewModel() {
         updateUserGuess("")
     }
 
+    suspend fun addNewWord(word: String): Boolean {
+        val success = repository.insertWord(word)
+        if (success) {
+            loadAllWords()
+        }
+        return success
+    }
+
     /*
      * Skip to next word
      */
@@ -97,7 +122,9 @@ class GameViewModel : ViewModel() {
      * current game state.
      */
     private fun updateGameState(updatedScore: Int) {
-        if (usedWords.size == MAX_NO_OF_WORDS){
+        val maxWords = minOf(MAX_NO_OF_WORDS, allAvailableWords.size)
+
+        if (usedWords.size == maxWords){
             //Last round in the game, update isGameOver to true, don't pick a new word
             _uiState.update { currentState ->
                 currentState.copy(
@@ -130,13 +157,19 @@ class GameViewModel : ViewModel() {
     }
 
     private fun pickRandomWordAndShuffle(): String {
-        // Continue picking up a new random word until you get one that hasn't been used before
-        currentWord = allWords.random()
-        return if (usedWords.contains(currentWord)) {
-            pickRandomWordAndShuffle()
-        } else {
-            usedWords.add(currentWord)
-            shuffleCurrentWord(currentWord)
+        if (allAvailableWords.isEmpty()) {
+            return ""
         }
-    }
+
+        val unusedWords = allAvailableWords - usedWords
+        currentWord = if (unusedWords.isNotEmpty()) {
+            unusedWords.random()
+        } else {
+            allAvailableWords.random()
+        }
+
+        usedWords.add(currentWord)
+        return shuffleCurrentWord(currentWord)
+        }
 }
+
